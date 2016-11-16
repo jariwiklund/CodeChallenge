@@ -26,9 +26,14 @@ class SendSmsTask implements \CodeChallenge\Models\Task{
         $this->message = $message;
     }
     
+    public function setStatusToInPipeLine(){
+        $this->status = \CodeChallenge\Models\Task::STATUS_IN_PIPELINE;
+        //todo: persist
+    }
+    
     public function execute() {
         $this->status = \CodeChallenge\Models\Task::STATUS_EXECUTING;
-        //todo: Persist
+        //todo: Persist, so that the taskrunner doesn't 
         try{
             $this->sms_gateway->SendSms($this->reciver_phone_number, $this->message);
             $this->status = \CodeChallenge\Models\Task::STATUS_SUCCEEDED;

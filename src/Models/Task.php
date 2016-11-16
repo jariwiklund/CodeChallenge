@@ -4,6 +4,7 @@ namespace CodeChallenge\Models;
 interface Task {
     
     const STATUS_TO_BE_EXECUTED = 'to_be_executed';
+    const STATUS_IN_PIPELINE = 'pipelined';
     const STATUS_FOR_RETRY = 'retry';
     const STATUS_EXECUTING = 'executing';
     const STATUS_SUCCEEDED = 'succeeded';
@@ -15,7 +16,8 @@ interface Task {
     public function execute();
     
     /**
-     * @return string 'executing','to_be_executed','failed','succeeded'
+     * @return string
+     * @see the STATUS constants
      */
     public function getStatus();
     
