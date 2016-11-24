@@ -1,0 +1,11 @@
+{
+    "name": "astridsynnoveschonemann",
+    "require-dev": {
+        "phpunit/phpunit": "5.5.*"
+    },
+    "autoload": {
+		"psr-4": {
+		  "CodeChallenge\\": "src"
+		}
+	}
+}
