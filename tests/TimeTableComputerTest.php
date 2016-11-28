@@ -55,14 +55,97 @@ class TimeTableComputerTest extends TestCase {
         $res2 = \CodeChallenge\Services\TimeTableComputer::MapTimeIntervalToBinRepresentation($begin, $end, 60);
         $this->assertEquals('000000000000000000000001', $res2);
         
-        $hex1 = '0x'.dechex(bindec($res1));
-        $gmp1 = gmp_init($hex1);
+        //todo: test exceptions
         
-        $hex2 = '0x'.dechex(bindec($res2));
-        $gmp2 = gmp_init($hex2);
+    }
+    
+    public function testMapDayScheduleToBinRepresentation(){
+        $schedule = new \CodeChallenge\Models\Schedule(
+            array(
+                new \CodeChallenge\Models\Appointment(
+                    'TestAppointment1', 
+                    new \DateTime('2016-11-24 00:15:00'), 
+                    new \DateTime('2016-11-24 14:15:00')
+                ),
+                new \CodeChallenge\Models\Appointment(
+                    'TestAppointment2', 
+                    new \DateTime('2016-11-24 23:00:00'), 
+                    new \DateTime('2016-11-24 23:59:00')
+                )
+                ,
+                new \CodeChallenge\Models\Appointment(
+                    'TestAppointment2', 
+                    new \DateTime('2016-11-24 19:00:00'), 
+                    new \DateTime('2016-11-24 20:00:00')
+                )
+            ),
+            new \CodeChallenge\Models\Person('TestPerson')
+        );
         
-        $gmp_and = gmp_or($gmp1, $gmp2);
-        
-        $this->assertEquals('111111111111111000000001', gmp_strval($gmp_and, 2));
+        $result = \CodeChallenge\Services\TimeTableComputer::MapDayScheduleToBinRepresentation(
+            $schedule, 
+            60
+        );
+        $this->assertEquals('111111111111111000010001', $result);
+    }
+    
+    public function testMapSchedulesToAvailabilityInBinaryString(){
+        $schedules = array(
+            new \CodeChallenge\Models\Schedule(
+                array(
+                    new \CodeChallenge\Models\Appointment(
+                        'TestAppointment1', 
+                        new \DateTime('2016-11-24 00:15:00'), 
+                        new \DateTime('2016-11-24 14:15:00')
+                    ),
+                    new \CodeChallenge\Models\Appointment(
+                        'TestAppointment2', 
+                        new \DateTime('2016-11-24 23:00:00'), 
+                        new \DateTime('2016-11-24 23:59:00')
+                    ),
+                    new \CodeChallenge\Models\Appointment(
+                        'TestAppointment2', 
+                        new \DateTime('2016-11-24 19:00:00'), 
+                        new \DateTime('2016-11-24 20:00:00')
+                    )
+                ),
+                new \CodeChallenge\Models\Person('TestPerson')
+            ),
+            new \CodeChallenge\Models\Schedule(
+                array(
+                    new \CodeChallenge\Models\Appointment(
+                        'TestAppointment1', 
+                        new \DateTime('2016-11-24 14:15:00'), 
+                        new \DateTime('2016-11-24 17:15:00')
+                    ),
+                    new \CodeChallenge\Models\Appointment(
+                        'TestAppointment2', 
+                        new \DateTime('2016-11-24 19:00:00'), 
+                        new \DateTime('2016-11-24 20:00:00')
+                    )
+                ),
+                new \CodeChallenge\Models\Person('TestPerson2')
+            )
+        );
+        $result = \CodeChallenge\Services\TimeTableComputer::MapSchedulesToAvailabilityInBinaryString(
+            $schedules, 
+            60
+        );
+        $this->assertEquals('111111111111111111010001', $result);
+    }
+    
+    function testMapBinStringToFreeSchedule(){
+        $bin_string = '111111111111111111010001';
+        $date_offset = new \DateTime('1979-05-29');
+        $free_schedule = \CodeChallenge\Services\TimeTableComputer::MapBinStringToFreeSchedule(
+            $bin_string, 
+            $date_offset
+        );
+        $this->assertEquals(2, count($free_schedule->getAppointments()));
+        $first_appointment = $free_schedule->getAppointments()[0];
+        $this->assertEquals('1979-05-29 18:00:00', $first_appointment->getBegins()->format('Y-m-d H:i:s'), print_r($first_appointment, true));
+        $second_appointment = $free_schedule->getAppointments()[1];
+        $this->assertEquals('1979-05-29 20:00:00', $second_appointment->getBegins()->format('Y-m-d H:i:s'), print_r($second_appointment, true));
+        $this->assertEquals('1979-05-29 23:00:00', $second_appointment->getEnds()->format('Y-m-d H:i:s'), print_r($second_appointment, true));
     }
 }

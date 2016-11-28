@@ -23,7 +23,7 @@ class Schedule {
      */
     private $owner;
     
-    function __construct(array $appointments, Person $owner) {
+    function __construct(array $appointments, \CodeChallenge\Models\Person $owner) {
         $this->appointments = $appointments;
         $this->owner = $owner;
     }

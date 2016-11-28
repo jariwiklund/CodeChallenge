@@ -28,7 +28,12 @@ class Appointment {
      */
     private $ends;
     
-    function __construct($title, \DateTime $begins, \DateTime $ends) {
+    /**
+     * @param string $title
+     * @param \DateTime $begins
+     * @param \DateTime $ends
+     */
+    function __construct(string $title, \DateTime $begins, \DateTime $ends) {
         $this->title = $title;
         $this->begins = $begins;
         $this->ends = $ends;
