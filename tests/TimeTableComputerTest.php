@@ -1,15 +1,10 @@
 <?php
 use PHPUnit\Framework\TestCase;
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 /**
  * Description of TestTimeslotCalculator
  *
- * @author astridsynnoveschonemann
+ * @author Jari Wiklund
  */
 class TimeTableComputerTest extends TestCase {
     
@@ -91,7 +86,7 @@ class TimeTableComputerTest extends TestCase {
     
     public function testMapSchedulesToAvailabilityInBinaryString(){
         $schedules = array(
-            new \CodeChallenge\Models\Schedule(
+            new \CodeChallenge\Models\DaySchedule(
                 array(
                     new \CodeChallenge\Models\Appointment(
                         'TestAppointment1', 
@@ -111,7 +106,7 @@ class TimeTableComputerTest extends TestCase {
                 ),
                 new \CodeChallenge\Models\Person('TestPerson')
             ),
-            new \CodeChallenge\Models\Schedule(
+            new \CodeChallenge\Models\DaySchedule(
                 array(
                     new \CodeChallenge\Models\Appointment(
                         'TestAppointment1', 
@@ -132,6 +127,37 @@ class TimeTableComputerTest extends TestCase {
             60
         );
         $this->assertEquals('111111111111111111010001', $result);
+    }
+    
+    function testFindAvailTimeslotsInSchedule(){
+        
+        $schedule = new \CodeChallenge\Models\DaySchedule(
+            array(
+                new \CodeChallenge\Models\Appointment(
+                    'TestAppointment1', 
+                    new \DateTime('2016-11-24 00:00:00'), 
+                    new \DateTime('2016-11-24 14:15:00')
+                ),
+                new \CodeChallenge\Models\Appointment(
+                    'TestAppointment2', 
+                    new \DateTime('2016-11-24 23:00:00'), 
+                    new \DateTime('2016-11-24 23:59:00')
+                ),
+                new \CodeChallenge\Models\Appointment(
+                    'TestAppointment2', 
+                    new \DateTime('2016-11-24 19:00:00'), 
+                    new \DateTime('2016-11-24 20:00:00')
+                )
+            ),
+            new \CodeChallenge\Models\Person('TestPerson')
+        );
+        
+        $res = \CodeChallenge\Services\TimeTableComputer::FindAvailTimeslotsInSchedule(
+            $schedule, 
+            15, 
+            1
+        );
+        $this->assertEquals(31, count($res));
     }
     
     function testMapBinStringToFreeSchedule(){

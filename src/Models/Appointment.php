@@ -42,6 +42,13 @@ class Appointment {
     function getTitle() {
         return $this->title;
     }
+    
+    public function getTimeSlot(): \CodeChallenge\Models\TimeSlot{
+        return new \CodeChallenge\Models\TimeSlot(
+            $this->getBegins(), 
+            $this->getEnds()
+        );
+    }
 
     function getBegins(): \DateTime {
         return $this->begins;

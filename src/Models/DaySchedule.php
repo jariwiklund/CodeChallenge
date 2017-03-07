@@ -9,23 +9,24 @@ namespace CodeChallenge\Models;
 /**
  * Description of Schedule
  *
- * @author astridsynnoveschonemann
+ * @author Jari Wiklund
  */
-class Schedule {
+class DaySchedule {
     
     /**
      * @var \CodeChallenge\Models\Appointment[]
      */
     private $appointments;
     
-    /**
-     * @var Person
-     */
-    private $owner;
-    
-    function __construct(array $appointments, \CodeChallenge\Models\Person $owner) {
+    function __construct(array $appointments) {
         $this->appointments = $appointments;
-        $this->owner = $owner;
+    }
+    
+    /**
+     * @return \DateTime
+     */
+    public function getDay(){
+        return $this->appointments[0]->getBegins();
     }
     
     /**
@@ -34,9 +35,4 @@ class Schedule {
     function getAppointments(): array {
         return $this->appointments;
     }
-
-    function getOwner(): Person {
-        return $this->owner;
-    }
-    
 }
