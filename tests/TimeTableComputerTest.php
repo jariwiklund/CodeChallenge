@@ -157,6 +157,9 @@ class TimeTableComputerTest extends TestCase {
             15, 
             1
         );
+        
+        echo print_r($res, true);
+        
         $this->assertEquals(31, count($res));
     }
     

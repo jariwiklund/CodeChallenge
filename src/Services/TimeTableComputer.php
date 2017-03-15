@@ -66,7 +66,7 @@ class TimeTableComputer {
      * @param \CodeChallenge\Models\DaySchedule $schedule
      * @return \GMP
      */
-    public static function DayScheduleToGmp(\CodeChallenge\Models\DaySchedule $schedule, int $resolution_in_minutes):string{
+    public static function DayScheduleToGmp(\CodeChallenge\Models\DaySchedule $schedule, int $resolution_in_minutes){
         $gmp = gmp_init('0x0');
         foreach ($schedule->getAppointments() as $appointment){
             $current_gmp = static::TimeSlotToGmp(
@@ -96,7 +96,7 @@ class TimeTableComputer {
         for($i=0; $i<=$bits_to_check; $i++){
             if( gmp_testbit($gmp, $i) === $what_to_look_for){
                 if($start !== null){
-                    $end = static::MinuteOfDayToDateTime(($i-1)*$resolution_in_minutes);
+                    $end = static::MinuteOfDayToDateTime(($i)*$resolution_in_minutes);
                     return new \CodeChallenge\Models\TimeSlot($start, $end);
                 }
                 else{
@@ -147,21 +147,26 @@ class TimeTableComputer {
      */
     public static function FindAvailTimeslotsInSchedule(\CodeChallenge\Models\DaySchedule $daily_schedule, int $timeslot_length_in_minutes, int $resolution_in_minutes){
         //todo: sanity-check length with resolution
+        if($timeslot_length_in_minutes%$resolution_in_minutes !== 0){
+            throw new \InvalidArgumentException("Timeslot length (".$timeslot_length_in_minutes.") must be divisible by resolution(".$resolution_in_minutes.")");
+        }
+        
+        $bitshift_length = $timeslot_length_in_minutes/$resolution_in_minutes;
+        
         $day_mask = static::DayScheduleToGmp($daily_schedule, $resolution_in_minutes);
         
         $timeslot_bin = static::MinutesToGmp($timeslot_length_in_minutes, $resolution_in_minutes);
-        //there must be a more efficient way than strlen
-        $timeslot_increment = strlen(gmp_strval($timeslot_bin, 2));
         $timeslots = [];
         $timeslots_to_check = static::CalculateNumTimeslotsPerDayForResolution($resolution_in_minutes);
         for($i=0; $i<$timeslots_to_check; $i++){
-            echo PHP_EOL.'checking whether '.gmp_strval($timeslot_bin, 2).PHP_EOL.' & '.gmp_strval($day_mask, 2).' are andable: '.gmp_cmp(gmp_and($day_mask, $timeslot_bin),0);
             if(gmp_cmp(gmp_and($day_mask, $timeslot_bin),0) === 0){
                 $timeslots[] = static::GmpToTimeSlot($timeslot_bin, $resolution_in_minutes);
-                echo ' yes! for '.$i.': '.count($timeslots);
+                $i+=$bitshift_length;
+                $timeslot_bin = static::gmp_shiftl($timeslot_bin, $bitshift_length);
             }
-            echo ''.PHP_EOL;
-            $timeslot_bin = static::gmp_shiftl($timeslot_bin, 1);
+            else{
+                $timeslot_bin = static::gmp_shiftl($timeslot_bin, 1);
+            }
         }
         return $timeslots;
     }
@@ -175,6 +180,8 @@ class TimeTableComputer {
     } 
     
     /**
+     * A free schedule is a schedule where each appointment represents free time
+     * 
      * @param \GMP $gmp
      * @param \DateTime $day_to_map this to set the date
      * @return \CodeChallenge\Models\Schedule
@@ -182,14 +189,14 @@ class TimeTableComputer {
     public static function GmpToFreeSchedule(\GMP $gmp, \DateTime $day_to_map) : \CodeChallenge\Models\Schedule{
         $num_slots = \strlen(gmp_strval($gmp, 2));
         $day_to_map->setTime(0, 0, 0);
-        if($num_slots > 1440){
+        if($num_slots > self::MINUTES_PER_DAY){
             throw new \InvalidArgumentException('The bin_string is too long('.$num_slots.') it can ax be 1440 chars(one minute resolution)');
         }
-        if( 1440 % $num_slots != 0){
+        if( self::MINUTES_PER_DAY % $num_slots != 0){
             throw new \InvalidArgumentException('The bin_string is invalid, its length must be a divisor of 1440(one minute resolution)');
         }
         $appointments = array();
-        $num_minutes_per_slot = 1440/$num_slots;
+        $num_minutes_per_slot = self::MINUTES_PER_DAY/$num_slots;
         for($i=0; $i<$num_slots;$i++){
             if(gmp_testbit($gmp, $i)){
                 if(!isset($begin_time)){
@@ -247,14 +254,14 @@ class TimeTableComputer {
      * @param \DateTime $begin_time
      * @param \DateTime $end_time
      * @param int $resolution_in_minutes
-     * @return string
+     * @return \GMP
      * @throws \InvalidArgumentException
      */
     public static function TimeIntervalToGmp(\DateTime $begin_time, \DateTime $end_time, int $resolution_in_minutes): \GMP{
         if($resolution_in_minutes > 60){
             throw new \InvalidArgumentException("Resolution can max be 60 minutes(one hour)");
         }
-        if( 1440 % $resolution_in_minutes != 0 ){
+        if( self::MINUTES_PER_DAY % $resolution_in_minutes != 0 ){
             throw new \InvalidArgumentException("Resolution must be a divisor of 1440(num minutes in 24 hours)");
         }
         if(($end_time->getTimestamp() - $begin_time->getTimestamp()) < $resolution_in_minutes){//needs work!
@@ -266,7 +273,7 @@ class TimeTableComputer {
        
         $begin_min_of_day = \CodeChallenge\Services\TimeTableComputer::DateTimeToMinuteTheDay($begin_time);
         if($resolution_in_minutes > 1){
-            $begin_resultion_index = (int)floor($begin_min_of_day/$resolution_in_minutes);//do thorough testing to see wether it really is ceil we should use
+            $begin_resultion_index = (int)floor($begin_min_of_day/$resolution_in_minutes);
         }
         else{
             $begin_resultion_index = $begin_min_of_day;
@@ -275,7 +282,7 @@ class TimeTableComputer {
         //regarding minus 1: we assume that the last minute should not be included, but is the max end of the period 
         $end_min_of_day = \CodeChallenge\Services\TimeTableComputer::CalculateMinuteOfTheDay($end_time)-1;
         if($resolution_in_minutes > 1){
-            $end_resultion_index = (int)floor($end_min_of_day/$resolution_in_minutes);//do thorough testing to see wether it really is ceil we should use
+            $end_resultion_index = (int)floor($end_min_of_day/$resolution_in_minutes);
         }
         else{
             $end_resultion_index = $end_min_of_day;
@@ -283,7 +290,6 @@ class TimeTableComputer {
         
         $timeslots = \CodeChallenge\Services\TimeTableComputer::CalculateNumTimeslotsPerDayForResolution($resolution_in_minutes);
         $gmp = gmp_init('0x0');
-        //build a string prepresentation of the binary pattern
         for($i = 0; $i<$timeslots; $i++){
             if($i >= $begin_resultion_index && $i <= $end_resultion_index){
                 gmp_setbit($gmp, $i);
@@ -299,7 +305,7 @@ class TimeTableComputer {
      * @param \DateTime $begin_time
      * @param \DateTime $end_time
      * @param int $resolution_in_minutes
-     * @return string
+     * @return \GMP
      * @throws \InvalidArgumentException
      */
     public static function TimeSlotToGmp(\CodeChallenge\Models\TimeSlot $time_slot, int $resolution_in_minutes): \GMP{
