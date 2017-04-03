@@ -38,7 +38,7 @@ class TimeTableComputer {
      * @param \DateTime $time
      * @return int
      */
-    public static function DateTimeToMinuteTheDay(\DateTime $time):int{
+    public static function DateTimeToMinuteOfDay(\DateTime $time):int{
         //todo: benchmark against format('U') / unix timestamp
         $num_hours = (int) $time->format('G');
         $num_minutes = (int) $time->format('i');
@@ -271,7 +271,7 @@ class TimeTableComputer {
             throw new \InvalidArgumentException('Begin and end time, must be the same day');
         }
        
-        $begin_min_of_day = \CodeChallenge\Services\TimeTableComputer::DateTimeToMinuteTheDay($begin_time);
+        $begin_min_of_day = \CodeChallenge\Services\TimeTableComputer::DateTimeToMinuteOfDay($begin_time);
         if($resolution_in_minutes > 1){
             $begin_resultion_index = (int)floor($begin_min_of_day/$resolution_in_minutes);
         }
@@ -316,7 +316,7 @@ class TimeTableComputer {
             throw new \InvalidArgumentException("Resolution must be a divisor of 1440(num minutes in 24 hours)");
         }
        
-        $begin_min_of_day = \CodeChallenge\Services\TimeTableComputer::DateTimeToMinuteTheDay($time_slot->getBegin());
+        $begin_min_of_day = \CodeChallenge\Services\TimeTableComputer::DateTimeToMinuteOfDay($time_slot->getBegin());
         if($resolution_in_minutes > 1){
             $begin_resultion_index = (int)floor($begin_min_of_day/$resolution_in_minutes);//do thorough testing to see whether it really is floor we should use
         }
@@ -325,7 +325,7 @@ class TimeTableComputer {
         }
         
         //regarding minus 1: we assume that the last minute should not be included, but is the max end of the period 
-        $end_min_of_day = \CodeChallenge\Services\TimeTableComputer::DateTimeToMinuteTheDay($time_slot->getEnd())-1;
+        $end_min_of_day = \CodeChallenge\Services\TimeTableComputer::DateTimeToMinuteOfDay($time_slot->getEnd())-1;
         if($resolution_in_minutes > 1){
             $end_resultion_index = (int)floor($end_min_of_day/$resolution_in_minutes);//do thorough testing to see whether it really is floor we should use
         }
