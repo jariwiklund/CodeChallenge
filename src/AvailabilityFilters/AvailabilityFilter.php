@@ -13,7 +13,10 @@ namespace CodeChallenge\Models;
  */
 class AvailabilityFilter {
     
-    public function getBinaryStringMask(){
+    /**
+     * @return \GMP
+     */
+    public function getGmpRepresentation(){
         
     }
 }

@@ -4,6 +4,7 @@ namespace CodeChallenge\Services;
 /**
  * Resolution in minutes, means how many minutes each bit represents
  * 1 in the mask means the timeslot is occupied(not available)
+ * The gmp values follows a somewhat little-endianness, in that the right-most bits denote the lowest times
  *
  * @author Jari Wiklund
  */
@@ -146,7 +147,7 @@ class TimeTableComputer {
      * @return \CodeChallenge\Models\TimeSlot[]
      */
     public static function FindAvailTimeslotsInSchedule(\CodeChallenge\Models\DaySchedule $daily_schedule, int $timeslot_length_in_minutes, int $resolution_in_minutes){
-        //todo: sanity-check length with resolution
+        
         if($timeslot_length_in_minutes%$resolution_in_minutes !== 0){
             throw new \InvalidArgumentException("Timeslot length (".$timeslot_length_in_minutes.") must be divisible by resolution(".$resolution_in_minutes.")");
         }
@@ -154,6 +155,7 @@ class TimeTableComputer {
         $bitshift_length = $timeslot_length_in_minutes/$resolution_in_minutes;
         
         $day_mask = static::DayScheduleToGmp($daily_schedule, $resolution_in_minutes);
+        echo PHP_EOL.'day_mask='.gmp_strval($day_mask, 2);
         
         $timeslot_bin = static::MinutesToGmp($timeslot_length_in_minutes, $resolution_in_minutes);
         $timeslots = [];
@@ -217,7 +219,7 @@ class TimeTableComputer {
             $end_time = $day_to_map->add(new \DateInterval('PT'.($num_slots*$num_minutes_per_slot).'M'));
             $appointments[] = new \CodeChallenge\Models\Appointment("Free period(".($num_slots*$num_minutes_per_slot).")", $end_time, $begin_time);
         }
-        return new \CodeChallenge\Models\Schedule($appointments, new \CodeChallenge\Models\Person('NullPerson'));
+        return new \CodeChallenge\Models\DaySchedule($appointments, new \CodeChallenge\Models\Person('NullPerson'));
     }
     
     /**
@@ -280,7 +282,7 @@ class TimeTableComputer {
         }
         
         //regarding minus 1: we assume that the last minute should not be included, but is the max end of the period 
-        $end_min_of_day = \CodeChallenge\Services\TimeTableComputer::CalculateMinuteOfTheDay($end_time)-1;
+        $end_min_of_day = \CodeChallenge\Services\TimeTableComputer::DateTimeToMinuteOfDay($end_time)-1;
         if($resolution_in_minutes > 1){
             $end_resultion_index = (int)floor($end_min_of_day/$resolution_in_minutes);
         }
